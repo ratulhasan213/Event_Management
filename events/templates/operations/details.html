@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Details Page</title>
+</head>
+<body class = "bg-gray-200">
+
+
+    <div class = "detailscontainer w-[100%] flex justify-center items-center">
+        
+    
+            <div class = "flex flex-col w-[100%]">
+
+
+                     <div class = "w-[100%] min-h-30 p-4 bg-gradient-to-bl from-teal-400 via-violet-600 to-indigo-600 flex justify-center">
+                          <p class = "font-semibold text-white">ID: {{event.id}}__Event Name:{{event.eventName}}</p>
+                     </div>
+
+                    <div class = "w-[100%] p-2  flex flex-col gap-2 font-serif ">
+
+                            <p>Catagory: {{event.catagory.catagoryName}}</p>
+                            <p>Location: {{event.eventLocation}}</p>
+                            <p>Date:{{event.eventDate}}</p>
+                            <p>Time:{{event.eventTime}}</p>
+                            <p>Participants:
+                                  {% for participant in event.participants.all %}
+                                
+                                    {{participant.participantName}},
+                            
+                                  {% endfor %}
+
+                            </p>
+                            
+
+                            <p class = "text-justify">Description: {{event.catagory.catagoryDescription}}</p>
+
+                    </div>
+
+
+
+            </div>
+
+       
+
+    </div>
+
+    
+    
+</body>
+</html>

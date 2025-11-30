@@ -1,0 +1,248 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>HomePage</title>
+</head>
+
+<body class = "bg-emerald-100">
+
+
+    <header>
+
+
+        <div class="headerSection flex justify-evenly w-[80%] mx-auto bg-gradient-to-r from-black/70 via-gray-900/60 to-black/70 backdrop-blur-xl border rounded-b-lg">
+
+         <div class = "headerLogo flex items-center gap-1.5 text-white font-semibold p-1">
+            <img src="{% static "IMAGES/eventLogo.svg" %}" alt="logo" class = "h-[4rem] w-[4rem] rotate-[-25deg]">
+            <p>EVENT-MANAGEMENT</p>
+         </div>
+         <div class = "headerlink flex items-center text-white font-semibold">
+            
+            <ul class = "list-none flex gap-3">
+                <li><a href="">Home</a></li>
+                <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li><a href="">Contact</a></li>
+                <li><a href="">About</a></li>
+            </ul>
+
+         </div>
+
+        </div>
+
+
+    </header>
+
+
+    <main>
+
+
+        <div class="mainsection flex flex-col w-[80%] mx-auto  mt-2 p-2">
+
+
+             <div class="uppermain text-4xl self-center mb-2 ">
+                   <p class = "font-semibold font-mono text-gray-500 text-shadow-md text-shadow-black">WELCOME</p>
+             </div>
+
+             <div class="lowermain flex w-[100%] justify-evenly">
+                
+                    <div class="event  p-2 w-[30%] flex justify-center items-center bg-rose-500 font-extrabold  rounded-md">
+                        <p><a href="{% url 'create_event' %}">CREATE AN EVENT</a></p>
+                    </div>
+
+                    <div class="catagory fp-2 w-[30%] flex justify-center items-center bg-fuchsia-500 font-extrabold  rounded-md">
+                        <p><a href="{% url 'create_catagory' %}">CREATE A CATAGORY</a></p>
+                    </div>
+
+                    <div class="member p-2 w-[30%] flex justify-center items-center bg-orange-500 font-extrabold  rounded-md">
+                        <p><a href=" {% url 'create_participant' %} ">CREATE A MEMBERSHIP</a></p>
+                    </div>
+
+             </div>
+
+
+             <div class="picturesection w-full flex flex-col items-center justify-center gap-4 bg-cover bg-center min-h-[30rem] mt-4 inset-0 bg-black/50 backdrop-blur-sm"
+                style="background-image: url('{% static 'IMAGES/banner.jpg' %}');">
+
+
+                    <div class="absolute inset-0 bg-black/50 backdrop-blur-[1px]"></div>
+
+                    <!-- Text content -->
+                    <div class="relative z-10 flex flex-col items-center justify-center">
+                        <p class="font-mono font-semibold text-6xl text-white me-[10rem]">From Planning</p>
+                        <p class="font-mono font-semibold text-6xl text-white ms-[10rem]">To Performance</p>
+                        <p class="font-mono font-semibold text-2xl text-white">All in One Place</p>
+                    </div>
+
+
+             </div>
+
+
+
+             <div class="searchboxsection w-[100%] flex justify-between p-2  mt-4">
+                    <div class = "flex flex-col ">
+                        <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-blue-500">Search by Event Name</p>
+                        <form method="GET" action="{% url 'home' %}">
+                        <input type="text" name="eventSearch" class="border" placeholder="Search event...">
+                            <button type="submit" class="border px-2 bg-sky-500 font-semibold">Search</button>
+                        </form>
+                      
+                    </div>
+
+                    <div class = "flex flex-col ">
+                       <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-blue-500">Search by Catagory Name</p>
+                       <form method="GET" action="{% url 'home' %}">
+                            <input type="text" name="catagorySearch" class="border" placeholder="Search Catagory...">
+                            <button type="submit" class="border px-2 bg-sky-500 font-semibold">Search</button>
+                       </form>
+                    </div>
+             </div>
+
+
+
+
+            <div class="showData flex flex-col gap-4 p-4">
+
+
+                {% if messages %}
+            
+
+                        {% for message in messages %}
+
+                            
+                        
+                            <div class = " py-2 px-3 font-semibold
+                            
+                                {% if message.tags == "success"%} 
+                                bg-green-500 
+                                
+                                {% elif message.tags == "warning" %}
+                                bg-yellow-500
+                                
+                                {% elif message.tags == "error" %}
+                                bg-red-600
+                                
+                                {% else %}
+                                bg-gray-500
+
+                                {% endif %}
+                            
+                            ">
+
+                            {{ message }}
+
+                            </div>           
+                        
+                        {% endfor %}
+
+                {% endif %}
+
+
+                
+                  
+                {% if didsearchOccured and not events and not catagories%}
+                
+                   <p class="text-gray-500 italic text-lg font-semibold">&#x1F622; No Results Found.</p>
+
+                
+                {% endif %}
+
+                  
+
+        
+                    {% comment %} Catagories {% endcomment %}
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for catagory in catagories %}
+                            <div class="flex flex-col p-2 bg-white rounded-lg">
+                                <div class="min-h-30 bg-gradient-to-bl from-teal-400 via-violet-600 to-indigo-600 flex flex-col"> 
+                                    <div class="mb-4">
+                                        <p class="font-semibold text-white text-center">{{ catagory.catagoryName }}</p>
+                                    </div>
+
+                                    <div class="flex justify-around">
+                                        <a href="{% url 'editCatagory' catagory.id %}" class="px-2 bg-sky-500 rounded-sm font-semibold">EDIT</a>
+                                        <form action="{% url 'deleteCatagory' catagory.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <button type="submit" class="px-2 bg-rose-500 rounded-sm font-semibold">DELETE</button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-2">
+                                    <p>Events Under this Category</p>
+                                    <ul class="list-disc list-inside">
+                                        {% for event in catagory.event_catagory.all %}
+                                            <li>{{ event.eventName }}</li>
+                                        {% empty %}
+                                            <li class="text-gray-400 italic">No Events Found.</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+
+                                <div class="mt-4">
+                                    <p>{{ catagory.catagoryDescription }}</p>
+                                </div>
+                            </div>
+                        
+                        {% endfor %}
+                </div>
+
+
+                {% comment %} Events {% endcomment %}
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for event in events %}
+
+
+                            <div class="container  flex flex-col  gap-2 rounded-lg overflow-hidden shadow-2xl shadow-black">
+
+                                        <div class = " min-h-30 p-4 bg-gradient-to-bl from-teal-400 via-violet-600 to-indigo-600 flex flex-col gap-3  items-center">
+                                                <p class = "font-semibold text-white">Event Name:{{event.eventName}}</p>
+                                                <a href="{% url 'details' event.id %}"><button class = "px-2 bg-green-500 rounded-sm font-semibold">DETAILS</button></a>
+                                        </div>
+
+                                        <div class = "w-[100%] p-2  flex flex-col gap-2 font-serif ">
+
+                                                <p>Catagory: {{event.catagory.catagoryName}}</p>
+                                                <p>Location: {{event.eventLocation}}</p>
+                                                <p>Date:{{event.eventDate}}</p>
+                                                <p>Time:{{event.eventTime}}</p>
+
+                                        </div>
+
+                                        <div class = "w-[100%] flex justify-between p-2">
+                                            <a href="{% url 'editEvent' event.id %}" class = "px-2 bg-sky-500 rounded-sm font-semibold" >EDIT</a>
+                                            
+                                            <form action="{% url 'deleteEvent' event.id %}" method="POST">
+                                                    {% csrf_token %}
+                                                    <button type = "submit" class = "px-2 bg-rose-500 rounded-sm font-semibold">DELETE</button>
+                                            </form>
+                                            
+                                        </div>
+
+                            </div>
+
+                
+                    {% endfor %}
+                </div>
+                    
+
+                 
+
+            </div>
+
+
+
+
+
+        </div>
+
+    </main>
+
+
+</body>
+
+
+</html>
