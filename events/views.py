@@ -27,7 +27,7 @@ def home(request):
         print(f"Inside catagory_query")
         didsearchOccured = True
     
-    print(didsearchOccured)
+    # print(didsearchOccured)
 
     context = {
         "events": events,
