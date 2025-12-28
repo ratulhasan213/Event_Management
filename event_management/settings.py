@@ -229,8 +229,21 @@ EMAIL_PORT = config('EMAIL_PORT',cast = int)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
-
+""" 
+for local un comment this
 FRONT_END_URL = 'http://127.0.0.1:8000'
+
+"""
+
+""" This is for render 
+FRONT_END_URL="https://event-management-j60o.onrender.com"
+
+"""
+
+FRONT_END_URL = config(
+    "FRONT_END_URL",
+    default="http://127.0.0.1:8000"
+)
 
 LOGIN_URL = 'log_in'
 
