@@ -15,7 +15,7 @@ from decouple import config
 
 
 """ render database url start uncomment this"""
-# import dj_database_url
+import dj_database_url
 """ render database url end uncomment this """
 
 
@@ -34,9 +34,12 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
 
 
+
+
+
 """ For local (uncomment this) start: """  
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
 
 
 """For local (uncomment this) end"""
@@ -50,12 +53,10 @@ ALLOWED_HOSTS = []
 """ for render start: uncomment this """
 
 
-""" 
-
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com", "http://127.0.0.1:8000"]
 
- """
+
 
 """ for render end: uncomment this """
 
@@ -131,6 +132,9 @@ WSGI_APPLICATION = 'event_management.wsgi.application'
 
 
 #postgress(Local): (uncomment this):
+
+""" 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -142,21 +146,25 @@ DATABASES = {
     }
 }
 
+"""
+#postgress(Local): (uncomment this):
+
+
 
 
 
 
 """ render database start  uncomment """
-"""  
+
 
 DATABASES = {
     'default': dj_database_url.config(
         # Replace this value with your local database's connection string.
-        default='postgresql://event_management_db_t4i4_user:Ypg36ASQA0ZvYFYf3rCSYXHKmVtBZtZN@dpg-d4m8ac8gjchc73b41o80-a.oregon-postgres.render.com/event_management_db_t4i4',
+        default='postgresql://event_management_db_26m3_user:dU1ZCAxJVEQDKpYxnYFZK9RP6iFCikfb@dpg-d58i98er433s73f9pptg-a.virginia-postgres.render.com/event_management_db_26m3',
         conn_max_age=600
     )
 }
-"""
+
 """ render database end uncomment """
 
 
