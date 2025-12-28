@@ -1,5 +1,7 @@
 from django import forms
-from events.models import Event,Catagory,Participant
+from events.models import Event,Catagory
+
+
 
 class StyledFormMixin():
 
@@ -9,6 +11,7 @@ class StyledFormMixin():
 
     default_classes = "border-2 border-gray-300  w-[100%] rounded-lg shadow-sm focus:outine-none focus:border-rose-500 focus:ring-rose-300"
     otherwise = "border-2 border-gray-300  rounded-lg shadow-sm focus:outine-none focus:border-rose-500 focus:ring-rose-300"
+    iamge = "border-2 border-gray-300 rounded-lg shadow-sm p-2 w-full file:bg-rose-500 file:text-white file:px-4 file:py-2 file:rounded-lg file:border-none file:cursor-pointer hover:file:bg-rose-600"
    
     
     def apply_styled_widgets(self):
@@ -47,6 +50,20 @@ class StyledFormMixin():
                   field.widget.attrs.update({
                   "class": self.otherwise
                   })
+
+
+                elif isinstance(field.widget, forms.ClearableFileInput):
+                     field.widget.attrs.update({
+                          "class":self.iamge,
+                          "placeholder": f"Upload {field.label.lower()}",
+                     })
+                  
+                elif isinstance(field.widget, forms.PasswordInput):
+                        # Password field styling
+                        field.widget.attrs.update({
+                              "class": self.default_classes,
+                              "placeholder": f"Enter {field.label.lower()}"
+                        })
                
 
                 else:
@@ -58,29 +75,34 @@ class StyledFormMixin():
 
 
 
-class ParticipantModelForm(StyledFormMixin,forms.ModelForm):
-      class Meta:
-            model = Participant
-            fields = ["participantName","participantEmail"]
+
+             
+
+             
+             
 
 
 class CatagoryModelForm(StyledFormMixin,forms.ModelForm):
       class Meta:
             model = Catagory
             fields = ["catagoryName","catagoryDescription"]
+      
+
+                
 
 
 class EventModelForm(StyledFormMixin,forms.ModelForm):
       class Meta:
             model = Event
-            fields = ["eventName","eventDate","eventTime","eventLocation","catagory", "participants"]
+            fields = ["eventName","eventDate","eventTime","eventLocation","catagory", "participants","eventImage"]
 
             widgets = {
                  "participants":forms.CheckboxSelectMultiple,
                  "catagory": forms.Select,
                  "eventDate": forms.SelectDateWidget,
-                 "eventTime": forms.TimeInput(attrs={'type': 'time'})
+                 "eventTime": forms.TimeInput(attrs={'type': 'time'}),
             }
+
 
 
 """ 

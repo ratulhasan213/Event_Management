@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>create here</title>
+
+</head>
+<body class="bg-gray-100">
+
+
+
+    {% include "header.html" %}
+
+
+
+    <main class = "w-[80%] mx-auto mt-8  p-4 flex flex-col ">
+
+
+        {% if messages %}
+          
+
+               {% for message in messages %}
+
+                   
+               
+                  <div class = " py-2 px-3 font-semibold
+                  
+                    {% if message.tags == "success"%} 
+                     bg-green-500 
+                    
+                    {% elif message.tags == "warning" %}
+                      bg-yellow-500
+                    
+                    {% elif message.tags == "error" %}
+                      bg-red-600
+                    
+                    {% else %}
+                       bg-gray-500
+
+                    {% endif %}
+                  
+                  ">
+
+                   {{ message }}
+
+                  </div>           
+               
+               {% endfor %}
+
+          
+        
+        
+        
+        {% endif %}
+
+
+        
+
+        
+
+         <form method="post" enctype = 'multipart/form-data' >
+
+            {% csrf_token %}
+
+
+             {% if form.non_field_errors %}
+                      <ul class="text-red-600">
+                          {% for error in form.non_field_errors %}
+                              <li>{{ error }}</li>
+                          {% endfor %}
+                      </ul>
+             {% endif %}
+
+
+            {% for field in form %}
+
+                <label for="{{field.id_for_label}}"> <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-cyan-700">{{field.label}}</p> </label>
+                {{field}}
+
+                 {% if field.errors %}
+                        
+                          <ul>
+                              {% for error in field.errors %}
+                              
+                                <li>{{error}}</li>
+
+                              {% endfor %}
+                          </ul>
+                        
+                {% endif %}
+
+            {% endfor %}
+
+           
+
+
+            <div class = "buttonclass">
+                <button type = "submit" class = "px-2 py-1 rounded shadow-sm shadow-black border-2 border-white bg-green-500 mt-4 ">Submit</button>
+            </div>
+
+
+            
+
+
+        </form> 
+
+
+        
+    </main>
+
+
+    <div class="footerclass w-[80%] mx-auto my-4">
+        
+        {% include "footer.html" %}
+
+    </div>
+    
+</body>
+</html>
+
+
+
+
+{% comment %} 
+ 
+
+   {% for field in participant_form %}  <!-- Here we do not have any error as we only taking pictures-->      
+
+
+                      <label for="{{field.id_for_label}}"> <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-cyan-700">{{field.label}}</p> </label>
+                       {{field}}
+                  
+                  
+                  {% endfor %}
+
+
+{% endcomment %}

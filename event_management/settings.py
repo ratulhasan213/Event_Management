@@ -11,11 +11,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 
-""" render database url start """
-import dj_database_url
-""" render database url end """
+""" render database url start uncomment this"""
+# import dj_database_url
+""" render database url end uncomment this """
 
 
 
@@ -27,26 +28,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-86@%wgupgx!92a23t&!z!j7e_qmp=&0e1ssp766i%)_pkrd%5k'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 
-""" For local uncommen this: 
+""" For local (uncomment this) start: """  
 
 ALLOWED_HOSTS = []
 
 
- """
+"""For local (uncomment this) end"""
 
 
-""" for render start:  """
+
+
+
+
+
+""" for render start: uncomment this """
+
+
+""" 
 
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com", "http://127.0.0.1:8000"]
 
-""" for render end:  """
+ """
+
+""" for render end: uncomment this """
 
 
 
@@ -61,6 +72,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'events',
+    'users',
     "debug_toolbar",
 ]
 
@@ -116,26 +128,26 @@ WSGI_APPLICATION = 'event_management.wsgi.application'
 # }
 
 
-""" 
-#postgress(Local): uncomment this
 
+
+#postgress(Local): (uncomment this):
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'event_management',
-        'USER': 'postgres',
-        'PASSWORD': 'password',
-        'HOST': 'localhost',
-        'PORT': '5432'
+        'NAME': config('DB_NAME',default = ''),
+        'USER': config('DB_USER', default = ''),
+        'PASSWORD': config('DB_PASSWORD',default = ''),
+        'HOST': config('DB_HOST',default = 'localhost'),
+        'PORT': config('DB_PORT',default = '')
     }
 }
 
 
-""" 
 
 
 
-""" render database start """
+""" render database start  uncomment """
+"""  
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -144,8 +156,8 @@ DATABASES = {
         conn_max_age=600
     )
 }
-
-""" render database end """
+"""
+""" render database end uncomment """
 
 
 
@@ -189,8 +201,28 @@ STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+
+#for email:
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS',cast = bool)
+EMAIL_PORT = config('EMAIL_PORT',cast = int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+
+
+FRONT_END_URL = 'http://127.0.0.1:8000'
+
+LOGIN_URL = 'log_in'
 

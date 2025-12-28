@@ -10,45 +10,136 @@
 <body class = "bg-gray-200">
 
 
-    <div class = "detailscontainer w-[100%] flex justify-center items-center">
-        
-    
-            <div class = "flex flex-col w-[100%]">
+        {% include "header.html" %}
 
 
-                     <div class = "w-[100%] min-h-30 p-4 bg-gradient-to-bl from-teal-400 via-violet-600 to-indigo-600 flex justify-center">
-                          <p class = "font-semibold text-white">ID: {{event.id}}__Event Name:{{event.eventName}}</p>
-                     </div>
+        <main class = "w-[80%] mx-auto my-4 p-2 ">
 
-                    <div class = "w-[100%] p-2  flex flex-col gap-2 font-serif ">
 
-                            <p>Catagory: {{event.catagory.catagoryName}}</p>
-                            <p>Location: {{event.eventLocation}}</p>
-                            <p>Date:{{event.eventDate}}</p>
-                            <p>Time:{{event.eventTime}}</p>
-                            <p>Participants:
-                                  {% for participant in event.participants.all %}
+                <div class = "namecontainer flex justify-center  w-[100%]">
+                        <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-pink-500 font-mono text-[1.5rem]">{{event.eventName}}</p>
+                </div>
+
+
+
+                <div class = "detailscontainer  flex justify-between   bg-white rounded-lg shadow-sm">
                                 
-                                    {{participant.participantName}},
-                            
-                                  {% endfor %}
+                        
+                       <div class="textcontainer p-4 flex flex-col gap-3 font-serif ">
 
-                            </p>
-                            
+                                <div class="text-sm text-gray-700 space-y-1">
+                                        <p><span class="font-semibold">Category:</span> {{ event.catagory.catagoryName }}</p>
+                                        <p><span class="font-semibold">Location:</span> {{ event.eventLocation }}</p>
+                                        <p><span class="font-semibold">Date:</span> {{ event.eventDate }}</p>
+                                        <p><span class="font-semibold">Time:</span> {{ event.eventTime }}</p>
+                                </div>
 
-                            <p class = "text-justify">Description: {{event.catagory.catagoryDescription}}</p>
+                                <!-- Participants -->
+                                <div class="flex items-center gap-2 mt-2">
+                                        <p class="font-semibold text-sm text-gray-800">Participants:</p>
 
-                    </div>
+                                        <div class="flex gap-2">
+                                        {% for participant in event.participants.all %}
+                                                <div
+                                                class="w-8 h-8 bg-sky-500 flex items-center justify-center 
+                                                        rounded-full text-white text-sm font-bold
+                                                        hover:bg-sky-600 transition"
+                                                title="{{ participant.user.username }}"
+                                                >
+                                                <a href="{% url 'users:participant_profile' participant.id %}">  {{ participant.user.username|first|upper }} </a>
+                                               
+                                                </div>
+                                        {% empty %}
+                                                <p class="text-sm text-gray-500">No participants</p>
+                                        {% endfor %}
+                                        </div>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="mt-2">
+                                        <p class="font-semibold text-gray-800">Description</p>
+                                        <p class="text-justify text-sm text-gray-700">
+                                        {{ event.catagory.catagoryDescription }}
+                                        </p>
+                                </div>
+
+                        </div>
 
 
 
-            </div>
+                        {% if can_view %}
+                        
+                        
 
-       
+                                <div class="operationscontainer  flex justify-between items-end p-2 gap-4">
 
-    </div>
+
+                                        <a href="{% url 'events:editEvent' event.id %}" class = "px-2 bg-sky-500 rounded-sm font-semibold" >EDIT</a>
+                                                        
+                                        <form action="{% url 'events:deleteEvent' event.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <button type = "submit" class = "px-2 bg-rose-500 rounded-sm font-semibold">DELETE</button>
+                                        </form>
+
+
+
+                              </div>
+
+                        
+                        
+                        
+                        {% endif %}
+
+
+
+
+
+                        <div class="imagecontainer min-w-[160px] min-h-[160px]  max-w-[280px] max-h-[280px w-full h-full  flex justify-center items-center  overflow-hidden p-2  rounded-lg">
+
+                        <img 
+                                src="{{ event.eventImage.url }}" 
+                                class="w-full h-full object-contain"
+                                alt="Event Image"
+                        >
+                        </div>
+
+                        
+
+                </div>
+
+
+                
+
+
+
+        </main>
+
+
+        <div class="footersection w-[80%] mx-auto">
+
+                {% include "footer.html" %}
+
+        </div>
+
+
+    
 
     
     
 </body>
 </html>
+
+
+
+
+{% comment %} 
+ 
+
+ <div class = "w-[100%] flex justify-between p-2">
+                                                    
+                                                    
+                                                </div>
+
+
+
+{% endcomment %}

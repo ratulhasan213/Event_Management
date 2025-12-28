@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>User Activation</title>
+</head>
+<body>
+
+
+    {% if status == "activated" %}
+
+
+        <p class = "text-2xl font-semibold">Congratulation. Your account Activated Successfully. Go to the <a href="{% url 'users:log_in' %}" class = "text-blue-500">  Log in</a> Page to login your account</p>
+
+    {% elif status == "alreadyActivated" %}
+
+        <p class = "text-2xl font-semibold">Your account already activated.  Go to the <a href="{% url 'users:log_in' %}" class = "text-blue-500" > Log in</a> Page to login your account</p>
+    
+    {% elif status == "invalid" %}
+        <p class = "text-2xl font-semibold">Invalid User_id or Token</p>
+    
+    {% endif %}
+
+    
+    
+</body>
+</html>

@@ -1,11 +1,14 @@
 from django.db import models
 from django.utils import timezone   # <-- Use timezone instead of datetime
 
+
+
 class Event(models.Model):
     eventName = models.CharField(max_length=100, null=False, blank=False)
     eventDate = models.DateField(default=timezone.localdate)   # Correct
     eventTime = models.TimeField(default=timezone.now)   # Correct
     eventLocation = models.TextField(max_length=100, null=False, blank=False)
+    eventImage = models.ImageField(upload_to='events_photo', default='events_photo/defaultevent.png', blank=True, null=True)
 
     catagory = models.ForeignKey(
         "Catagory",
@@ -15,13 +18,17 @@ class Event(models.Model):
         related_name="event_catagory"
     )
 
+    #users:
     participants = models.ManyToManyField(
-        "Participant",
-        related_name="event_participant"
+        "users.Participant",
+        related_name="rsvp_events", # event_participant
+        blank=True
     )
 
     def __str__(self):
         return self.eventName
+
+
 
 
 class Catagory(models.Model):
@@ -32,12 +39,7 @@ class Catagory(models.Model):
         return self.catagoryName
 
 
-class Participant(models.Model):
-    participantName = models.CharField(max_length=100, null=False, blank=False)
-    participantEmail = models.EmailField(max_length=254, null=False, blank=False, unique=True)
 
-    def __str__(self):
-        return self.participantName
 
 
 

@@ -1,9 +1,31 @@
 from django.shortcuts import render,redirect
-from django.http import HttpResponse
-from events.models import Event,Catagory,Participant
-from events.forms import ParticipantModelForm,CatagoryModelForm,EventModelForm
+from events.models import Event,Catagory
+from users.models import Participant
+from events.forms import CatagoryModelForm,EventModelForm
 from django.contrib import messages
 from django.utils import timezone
+from django.contrib.auth.decorators import permission_required
+from django.db.models import Prefetch
+
+
+
+
+
+def get_user_role(user):
+    role = None
+
+    if user.is_superuser:
+        role = "Admin"
+    else:
+        group = user.groups.first()
+        if group:
+            role = group.name
+        else:
+            role = "Member"
+
+    return role
+
+
 
 
 
@@ -29,13 +51,19 @@ def home(request):
     
     # print(didsearchOccured)
 
+    role = get_user_role(request.user)
+
     context = {
         "events": events,
         "catagories": catagories,
-        "didsearchOccured":didsearchOccured
+        "didsearchOccured":didsearchOccured,
+        "role":role
     }
 
     return render(request, "homepage.html",context)
+
+
+
 
 
 def dashboard(request):
@@ -64,7 +92,8 @@ def dashboard(request):
         contextData = events
     
     elif type == "totalparticipants":
-        contextData = Participant.objects.prefetch_related("event_participant__catagory").all()
+        # contextData = Participant.objects.prefetch_related("rsvp_events__catagory").all()
+        contextData = Participant.objects.select_related('user').prefetch_related("rsvp_events").all()
 
     elif type == "previousevents":
         contextData = events.filter(eventDate__lt=today)
@@ -77,13 +106,17 @@ def dashboard(request):
         contextData = events.filter(eventDate = today)
 
     
+    role = get_user_role(request.user)
+
+    
     context = {
         "totalEvents":totalEvents,
         "totalParticipants":totalParticipants,
         "previousEvents":previousEvents,
         "upcomingEvents":upcomingEvents,
         "contextData":contextData,
-        "type": type
+        "type": type,
+        "role":role,
     }
 
         
@@ -97,24 +130,29 @@ def dashboard(request):
 
 
 def details(request,eventID):
-    event = Event.objects.get(id = eventID)
-
-    context = {"event":event}
-
+    event = (   Event.objects.select_related("catagory").
+                prefetch_related(Prefetch("participants",queryset=Participant.objects.select_related("user"))).get(id = eventID) 
+            )
+    # event = Event.objects.get(id = eventID)
+    role = get_user_role(request.user)
+    can_view = (role == "Admin" or role == "Organizer")
+    context = {"event":event,
+               "can_view":can_view,
+               }
     return render(request,"operations/details.html",context)
 
 
-
+@permission_required("events.change_event",login_url="events:no_permission")
 def editEvent(request,eventID):
     event = Event.objects.get(id = eventID)
     event_form = EventModelForm(instance = event)
 
     if request.method == "POST":
-        event_form = EventModelForm(request.POST,instance = event)
+        event_form = EventModelForm(request.POST,request.FILES,instance = event)
         if event_form.is_valid():
             event = event_form.save()
             messages.success(request,"Event Updated Successfully")
-            return redirect("editEvent", eventID)
+            return redirect("events:editEvent", eventID)
         else:
             messages.error(request,"Something Went Wrong!!!")
     
@@ -123,82 +161,47 @@ def editEvent(request,eventID):
     }
 
    
-    return render(request,"operations/create.html",context)
+    return render(request,"operations/create_ev_cat.html",context)
 
 
+
+@permission_required("events.delete_event",login_url="events:no_permission")
 def deleteEvent(request,eventID):
 
     if request.method == "POST":
         event = Event.objects.get(id = eventID)
         event.delete()
         messages.success(request,"Event Deleted Successfully")
-        return redirect("dashboard")
+        return redirect("events:dashboard")
     
     else:
         messages.error(request,"Something Went Wrong")
-        return redirect("dashboard")
-
-
-
-def editParticipant(request,participantID):
-  
-  participant = Participant.objects.get(id = participantID)
-  participant_form = ParticipantModelForm(instance = participant)
-
-
-  if request.method == "POST":
-      participant_form = ParticipantModelForm(request.POST, instance = participant)
-      if participant_form.is_valid():
-          participant = participant_form.save()
-          messages.success(request,"Member Edited Successfully")
-          return redirect("dashboard")
-    
-      else:
-        messages.error(request,"Something Went Wrong")
-        return redirect("dashboard")
-
-  context = {
-        "form":participant_form
-    }
-  
-  return render(request,"operations/create.html",context)
+        return redirect("events:dashboard")
 
 
 
 
-def deleteParticipant(request, participantID):
-
-    if request.method == "POST":
-        participant = Participant.objects.get(id = participantID)
-        participant.delete()
-        messages.success(request,"Participant Deleted Successfully")
-        return redirect("dashboard")
-    
-    else:
-        messages.error(request,"Something Went Wrong")
-        return redirect("dashboard")
-  
   
 
-
-
+@permission_required("events.add_event",login_url="events:no_permission")
 def create_event(request):
 
     if request.method == "POST":
-        event_form = EventModelForm(request.POST)
+        event_form = EventModelForm(request.POST,request.FILES)
         if event_form.is_valid():
             event = event_form.save()
             messages.success(request,"Event Created Successfully")
-            return redirect("create_event")
+            return redirect("events:create_event")
+        else:
+             messages.error(request, event_form.errors)
+             return redirect("events:create_event")
+           
 
 
     if Catagory.objects.count() == 0:
         messages.warning(request,"Pleaes Create a Catagory First")
-        return redirect("create_catagory")
+        return redirect("events:create_catagory")
 
-    if Participant.objects.count() == 0:
-        messages.warning(request,"Pleaes Create Participants First")
-        return redirect("create_participant")
 
     event_form = EventModelForm()
 
@@ -207,32 +210,17 @@ def create_event(request):
     }
 
    
-    return render(request,"operations/create.html",context)
+    return render(request,"operations/create_ev_cat.html",context)
 
 
 
-def create_participant(request):
-   
-   if request.method == "POST":
-       participant_form = ParticipantModelForm(request.POST)
-       if participant_form.is_valid():
-           member = participant_form.save()
-           messages.success(request,"Memebership Created Successfully")
-           return redirect("create_participant")
-       
-   participant_form = ParticipantModelForm()
-   context = {
-       "form":participant_form
-   }
 
-   
-           
-   
-   return render(request,"operations/create.html",context)
+
+
    
 
 
-
+@permission_required("events.add_catagory",login_url="events:no_permission")
 def create_catagory(request):
 
    if request.method == "POST":
@@ -241,7 +229,7 @@ def create_catagory(request):
         if catagory_form.is_valid():
             catagory = catagory_form.save()
             messages.success(request,"Catagory Created Successfully")
-            return redirect("create_catagory")
+            return redirect("events:create_catagory")
    
    catagory_form = CatagoryModelForm()
    context = {
@@ -251,13 +239,13 @@ def create_catagory(request):
    
 
    
-   return render(request,"operations/create.html",context)
+   return render(request,"operations/create_ev_cat.html",context)
 
 
 
 
 
-
+@permission_required("events.change_catagory",login_url="events:no_permission")
 def editCatagory(request,catagoryID):
     catagory = Catagory.objects.get(id = catagoryID)
     catagory_form = CatagoryModelForm(instance = catagory)
@@ -267,7 +255,7 @@ def editCatagory(request,catagoryID):
         if catagory_form.is_valid():
             catagory = catagory_form.save()
             messages.success(request,"Catagory Updated Successfully")
-            return redirect("editCatagory", catagoryID)
+            return redirect("events:editCatagory", catagoryID)
         else:
             messages.error(request,"Something Went Wrong!!!")
     
@@ -276,12 +264,12 @@ def editCatagory(request,catagoryID):
     }
 
    
-    return render(request,"operations/create.html",context)
+    return render(request,"operations/create_ev_cat.html",context)
 
 
 
 
-
+@permission_required("events.delete_catagory",login_url="events:no_permission")
 def deleteCatagory(request,catagoryID):
     if request.method == "POST":
         catagory = Catagory.objects.get(id = catagoryID)
@@ -292,3 +280,58 @@ def deleteCatagory(request,catagoryID):
     else:
         messages.error(request,"Something Went Wrong")
         return redirect("home")
+    
+
+
+
+
+def rsvp(request,eventID):
+    user =request.user
+
+    if not user.is_authenticated:
+        messages.warning(request,"please Login first")
+        return redirect("users:log_in")
+
+    if not user.is_superuser:
+        participant = getattr(user,'participant',None)
+        event = Event.objects.get(id = eventID)
+
+        if event.participants.filter(id = participant.id).exists():
+            messages.error(request,f"{user.username} has already rsvp this event")
+        else:
+
+            event.participants.add(participant)
+            messages.success(request,f"{event.eventName} added to -> {user.username} -> this account successfully")
+    
+    else:
+        messages.error(request,"Super user cannot rsvp events")
+        
+    
+
+
+    return redirect("events:dashboard")
+
+
+
+def no_permission(request):
+    if request.user.is_authenticated:
+        return render(request,"no_permission.html")
+    else:
+        messages.warning(request,"please Login first")
+        return redirect("users:log_in")
+
+
+
+    
+
+
+""" 
+
+ messages.error(request, "Please correct the errors below.")
+            return render(
+                request,
+                "operations/create_ev_cat.html",
+                {"form": event_form}
+            )
+
+ """
