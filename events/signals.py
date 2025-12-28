@@ -10,7 +10,7 @@ from django.conf import settings
 
 @receiver(m2m_changed,sender=Event.participants.through)
 def send_rsvp_email(sender,instance,action,pk_set,**kwargs):
-    if action == "POST":
+    if action == "post_add":
         try:
             p_id = list(pk_set)[0]
             participant = Participant.objects.select_related("user").get(id=p_id)
