@@ -15,7 +15,7 @@ from decouple import config
 
 
 """ render database url start uncomment this"""
-import dj_database_url
+# import dj_database_url
 """ render database url end uncomment this """
 
 
@@ -38,9 +38,9 @@ DEBUG = True
 
 
 """ For local (uncomment this) start: """  
-"""  
+
 ALLOWED_HOSTS = []
-"""
+
 
 """For local (uncomment this) end"""
 
@@ -63,6 +63,9 @@ CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com", "http://127.0.0.1:8000"]
 
 #chat gpt given:(render)
 
+
+"""  
+
 ALLOWED_HOSTS = [
     "event-management-j60o.onrender.com",
     "127.0.0.1",
@@ -73,6 +76,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://event-management-j60o.onrender.com",
     "http://127.0.0.1:8000",
 ]
+
+"""
 
 #chat gpt given:(render)
 
@@ -149,7 +154,7 @@ WSGI_APPLICATION = 'event_management.wsgi.application'
 
 #postgress(Local): (uncomment this):
 
-"""  
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -161,7 +166,6 @@ DATABASES = {
     }
 }
 
-"""
 
 
 #postgress(Local): (uncomment this):
@@ -174,7 +178,7 @@ DATABASES = {
 """ render database start  uncomment """
 
 
-
+"""  
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -183,6 +187,8 @@ DATABASES = {
         conn_max_age=600
     )
 }
+
+"""
 
 
 
@@ -260,6 +266,9 @@ FRONT_END_URL = 'http://127.0.0.1:8000'
 FRONT_END_URL="https://event-management-j60o.onrender.com"
 
 """
+
+#paste this in .env(for render)
+# FRONT_END_URL=https://event-management-j60o.onrender.com
 
 FRONT_END_URL = config(
     "FRONT_END_URL",
