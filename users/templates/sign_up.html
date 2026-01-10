@@ -100,20 +100,43 @@
                   {% endfor %}
 
 
-                  {% comment %} participant_form  {% endcomment %}
+
+                  {% if participant_form %}
+
+                          {% if user_form.non_field_errors %}
+                              <ul class="text-red-600">
+                                  {% for error in user_form.non_field_errors %}
+                                      <li>{{ error }}</li>
+                                  {% endfor %}
+                              </ul>
+                          {% endif %}
 
 
-                  {% for field in participant_form %}  <!-- Here we do not have any error as we only taking pictures-->      
+
+                          {% for field in participant_form %}  <!-- Here we do not have any error as we only taking pictures-->      
 
 
-                      <label for="{{field.id_for_label}}"> <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-cyan-700">{{field.label}}</p> </label>
-                       {{field}}
+                            <label for="{{field.id_for_label}}"> <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-cyan-700">{{field.label}}</p> </label>
+                            {{field}}
+                            
+                            {% if field.errors %}
+                        
+                                <ul class="text-red-600">
+                                    {% for error in field.errors %}
+                                    
+                                      <li>{{error}}</li>
+
+                                    {% endfor %}
+                                </ul>
+                            
+                            {% endif %}
+                        
+                        
+                        {% endfor %}
                   
                   
-                  {% endfor %}
-
-
-                       
+                  
+                  {% endif %}
 
 
                   <div class = "buttonclass">
@@ -153,6 +176,15 @@
 
 
 
+
+                  {% for field in participant_form %}  <!-- Here we do not have any error as we only taking pictures-->      
+
+
+                      <label for="{{field.id_for_label}}"> <p class = "text-shadow-sm text-shadow-black font-semibold text-[1.1rem] text-cyan-700">{{field.label}}</p> </label>
+                       {{field}}
+                  
+                  
+                  {% endfor %}
 
 
  

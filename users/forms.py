@@ -3,7 +3,7 @@ from django import forms
 from events.forms import StyledFormMixin
 from users.models import Participant
 from django.contrib.auth.models import User,Group,Permission
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm,PasswordChangeForm,PasswordResetForm,SetPasswordForm
 from django.contrib.auth import authenticate
 
 
@@ -60,9 +60,7 @@ class UserForm(StyledFormMixin,forms.ModelForm):
     
         return email
      
-
-
-
+     
 
      def clean_password(self):
         password = self.cleaned_data.get('password')
@@ -112,7 +110,30 @@ class UserForm(StyledFormMixin,forms.ModelForm):
 class ParticipantModelForm(StyledFormMixin,forms.ModelForm):
       class Meta:
             model = Participant
-            fields = ["participantPhoto"]
+            fields = ["participantPhoto","phone_number"]
+
+            widgets ={
+                      "phone_number": forms.TextInput()        
+                  }
+        
+      def clean_phone_number(self):
+        phone_number = self.cleaned_data.get('phone_number')
+        errors = []
+        
+        if phone_number:
+            qs = Participant.objects.filter(phone_number__iexact=phone_number)
+
+            if self.instance.pk:
+                qs = qs.exclude(pk = self.instance.pk)
+            
+            if qs.exists():
+                errors.append("Phone number already exists")
+        
+
+        if errors:
+            raise forms.ValidationError(errors)
+    
+        return phone_number
             
 
 
@@ -136,9 +157,6 @@ class LoginForm(StyledFormMixin,AuthenticationForm):
         return cleaned_data
     
 
-
-
-
     
 
 class UserEditForm(StyledFormMixin,forms.ModelForm):
@@ -146,41 +164,56 @@ class UserEditForm(StyledFormMixin,forms.ModelForm):
         model = User
         fields = ['username', 'email', 'first_name', 'last_name']
 
-        def clean_username(self):
-          username = self.cleaned_data.get('username')
-          errors = []
+    def clean_username(self):
+    
+        username = self.cleaned_data.get('username')
+        errors = []
 
-          if User.objects.filter(username__iexact=username).exists():
-               errors.append("User name already exists")
-           
-          if errors:
+        if username:
+            qs = User.objects.filter(username__iexact=username)
+
+            if self.instance.pk:
+                qs = qs.exclude(pk = self.instance.pk)
+        
+            if qs.exists():
+                errors.append("User name already exists")
+                
+        if errors:
             raise forms.ValidationError(errors)
-      
-          return username
+    
+        return username
      
 
 
 
-        def clean_email(self):
-            email = self.cleaned_data.get('email')
-            errors = []
-            
-            if '@' not in email:
-                errors.append("Email must contain @ sign")
-            
-            if User.objects.filter(email__iexact=email).exists():
-                errors.append("Email already exists")
-            
-
-            if errors:
-                raise forms.ValidationError(errors)
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        errors = []
         
-            return email
+        if '@' not in email:
+            errors.append("Email must contain @ sign")
+
+
+
+        if email:
+            qs = User.objects.filter(email__iexact=email)
+
+            if self.instance.pk:
+                qs = qs.exclude(pk = self.instance.pk)
+        
+            if qs.exists():
+                errors.append("Email already exists")
+
+        if errors:
+            raise forms.ValidationError(errors)
+    
+        return email
 
 
 
 
 class AssignRoleForm(StyledFormMixin, forms.Form):
+
     users = forms.ModelMultipleChoiceField(
         queryset=User.objects.filter(is_superuser=False),
         widget = forms.CheckboxSelectMultiple,
@@ -195,13 +228,18 @@ class AssignRoleForm(StyledFormMixin, forms.Form):
 
 
 
-class ChangeRoleForm(StyledFormMixin,forms.Form):
+class ChangeRoleForm(StyledFormMixin,forms.ModelForm):
+    
+     class Meta:
+        model = Participant
+        fields = []
      
      group = forms.ModelChoiceField(
         queryset=Group.objects.all(),
         empty_label="Select a role",
         label="Change Role"
     )
+   
      
 
 
@@ -240,6 +278,76 @@ class CreateGroupForm(StyledFormMixin, forms.ModelForm):
         self.fields['permissions'].label_from_instance = (
             lambda perm: f"{perm.name} ({perm.content_type.app_label}.{perm.codename})"
         )
+
+
+
+class ChangePasswordForm(StyledFormMixin,PasswordChangeForm):
+     
+      def clean_old_password(self):
+          
+          errors = []
+          
+          old_password = self.cleaned_data.get("old_password")
+          if not self.user.check_password(old_password):
+              errors.append("Old password is incorrect")
+
+          if errors:
+            raise forms.ValidationError(errors)
+              
+              
+          return old_password
+      
+      
+      def clean(self):
+        cleaned_data = super().clean()
+        new_password1 = cleaned_data.get("new_password1")
+        new_password2 = cleaned_data.get("new_password2")
+        errors = []
+
+        if new_password1 != new_password2:
+            errors.append("New passwords do not match.")  
+
+        if new_password1 and  len(new_password1) < 8 :
+            errors.append("The password must be at least 8 char long")
+    
+        if not any(char.isalpha() for char in new_password1):
+            errors.append("The password must contain a letter")
+
+        if not any(dig.isdigit() for dig in new_password1):
+            errors.append("The password must contain a number")
+
+
+        if errors:
+            raise forms.ValidationError(errors)
+
+        
+        return cleaned_data
+          
+    
+
+
+
+class PasswordResetMyForm(StyledFormMixin,PasswordResetForm):
+    pass
+
+
+class PasswordResetConfirmForm(StyledFormMixin,SetPasswordForm):
+    def clean_password(self):
+        password = self.cleaned_data.get('new_password1')
+        errors = []
+
+        if len(password) < 8 :
+            errors.append("The password must be at least 8 char long")
+        
+        if not any(char.isalpha() for char in password):
+            errors.append("The password must contain a letter")
+        if not any(dig.isdigit() for dig in password):
+            errors.append("The password must contain a number")
+        
+        if errors:
+            raise forms.ValidationError(errors)
+        
+        return password
 
 
              

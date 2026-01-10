@@ -16,16 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
-from events.views import home
+from events.views import Home
 from debug_toolbar.toolbar import debug_toolbar_urls
 from django.conf.urls.static import static
 from django.conf import settings
+from users.views import PasswordResetConfirm,ResetPassword
+from django.contrib.auth.views import PasswordResetDoneView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("",home,name= "home"),
+    path("",Home.as_view(),name= "home"),
     path("events/",include("events.urls")),
     path("users/",include("users.urls")),
+    path("users/password_reset/",ResetPassword.as_view(),name="password_reset"),
+    path("users/password_reset_confirm/<uidb64>/<token>/",PasswordResetConfirm.as_view(),name = 'password_reset_confirm'),
+    path("password_reset_done/", PasswordResetDoneView.as_view(),name="password_reset_done"),
 ]+debug_toolbar_urls()
 
 

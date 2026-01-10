@@ -12,6 +12,6 @@ class Participant(models.Model):
     )
 
     participantPhoto = models.ImageField(upload_to='participants_photo', default='participants_photo/defaultparticipant.png', blank=True, null=True)
-
+    phone_number = models.CharField(blank=True, null=True)
     def __str__(self):
         return self.user.username

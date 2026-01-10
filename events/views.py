@@ -3,9 +3,16 @@ from events.models import Event,Catagory
 from users.models import Participant
 from events.forms import CatagoryModelForm,EventModelForm
 from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
 from django.utils import timezone
-from django.contrib.auth.decorators import permission_required
+# from django.contrib.auth.decorators import permission_required
 from django.db.models import Prefetch
+from django.views import View
+from django.views.generic import TemplateView,DetailView,UpdateView,CreateView,DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin,PermissionRequiredMixin
+from django.urls import reverse_lazy
+from django.contrib.auth.views import redirect_to_login
+
 
 
 
@@ -29,293 +36,377 @@ def get_user_role(user):
 
 
 
-def home(request):
-    event_query = request.GET.get("eventSearch", "").strip().lower()
-    catagory_query = request.GET.get("catagorySearch", "").strip().lower()
+class Home(TemplateView):
 
-    events = Event.objects.none()
-    catagories = Catagory.objects.none()
-    didsearchOccured = False
+    template_name = "homepage.html"
+    
+    def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            event_query = self.request.GET.get("eventSearch", "").strip().lower()
+            catagory_query = self.request.GET.get("catagorySearch", "").strip().lower()
+            events = Event.objects.none()
+            catagories = Catagory.objects.none()
+            didsearchOccured = False
+            if event_query:
+                events = Event.objects.filter(eventName__icontains=event_query).select_related("catagory").prefetch_related("participants")
+                didsearchOccured = True
+            elif catagory_query:
+                catagories = Catagory.objects.filter(catagoryName__icontains=catagory_query).prefetch_related("event_catagory")
+                didsearchOccured = True
 
+            role = get_user_role(self.request.user)
+            context.update ( {
+                "events": events,
+                "catagories": catagories,
+                "didsearchOccured":didsearchOccured,
+                "role":role
+            } )
+            return context
+    
     
 
 
-    if event_query:
-        events = Event.objects.filter(eventName__icontains=event_query).select_related("catagory").prefetch_related("participants")
-        print(f"Inside event_query")
-        didsearchOccured = True
-    elif catagory_query:
-        catagories = Catagory.objects.filter(catagoryName__icontains=catagory_query).prefetch_related("event_catagory")
-        print(f"Inside catagory_query")
-        didsearchOccured = True
+
+
+
+class DashBoard(TemplateView):
+    template_name = "dashboard/dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        type = self.request.GET.get("type","todaysevents")
+        events = Event.objects.select_related("catagory").prefetch_related("participants").all()
+
+        today = timezone.localdate()
+        total_events_count = events.count()
+       
+        total_participants_count = Participant.objects.count()
+        previousEvents = events.filter(eventDate__lt = today)
+        upcomingEvents = events.filter(eventDate__gt = today)
+
+        previous_events_count = previousEvents.count()
+        upcoming_events_count = upcomingEvents.count()
+
+      
+
+
+        if type == "totalevents":
+            contextData = events
     
-    # print(didsearchOccured)
+        elif type == "totalparticipants":
+            # contextData = Participant.objects.prefetch_related("rsvp_events__catagory").all()
+            contextData = Participant.objects.select_related('user').prefetch_related("rsvp_events").all()
 
-    role = get_user_role(request.user)
-
-    context = {
-        "events": events,
-        "catagories": catagories,
-        "didsearchOccured":didsearchOccured,
-        "role":role
-    }
-
-    return render(request, "homepage.html",context)
-
-
-
-
-
-def dashboard(request):
-    type = request.GET.get("type","todaysevents")
-
-    events = Event.objects.select_related("catagory").prefetch_related("participants").all()
-
-
-    totalEvents = 0
-    totalParticipants = Participant.objects.count()
-    previousEvents = 0
-    upcomingEvents = 0
-    today = timezone.localdate()
-
-    for event in events:
-        totalEvents+=1
-
-        if event.eventDate < today:
-            previousEvents+=1
-        
-        if event.eventDate > today:
-            upcomingEvents+=1
-
+        elif type == "previousevents":
+            contextData = previousEvents
     
-    if type == "totalevents":
-        contextData = events
+        elif type == "upcomingevents":
+            contextData = upcomingEvents
     
-    elif type == "totalparticipants":
-        # contextData = Participant.objects.prefetch_related("rsvp_events__catagory").all()
-        contextData = Participant.objects.select_related('user').prefetch_related("rsvp_events").all()
-
-    elif type == "previousevents":
-        contextData = events.filter(eventDate__lt=today)
-    
-    elif type == "upcomingevents":
-        contextData = events.filter(eventDate__gt=today)
-    
-    else:
-        #todaysevents:
-        contextData = events.filter(eventDate = today)
-
-    
-    role = get_user_role(request.user)
-
-    
-    context = {
-        "totalEvents":totalEvents,
-        "totalParticipants":totalParticipants,
-        "previousEvents":previousEvents,
-        "upcomingEvents":upcomingEvents,
-        "contextData":contextData,
-        "type": type,
-        "role":role,
-    }
-
-        
-        
-
-
-    return render(request,"dashboard/dashboard.html",context)
-
-
-
-
-
-def details(request,eventID):
-    event = (   Event.objects.select_related("catagory").
-                prefetch_related(Prefetch("participants",queryset=Participant.objects.select_related("user"))).get(id = eventID) 
-            )
-    # event = Event.objects.get(id = eventID)
-    role = get_user_role(request.user)
-    can_view = (role == "Admin" or role == "Organizer")
-    context = {"event":event,
-               "can_view":can_view,
-               }
-    return render(request,"operations/details.html",context)
-
-
-@permission_required("events.change_event",login_url="events:no_permission")
-def editEvent(request,eventID):
-    event = Event.objects.get(id = eventID)
-    event_form = EventModelForm(instance = event)
-
-    if request.method == "POST":
-        event_form = EventModelForm(request.POST,request.FILES,instance = event)
-        if event_form.is_valid():
-            event = event_form.save()
-            messages.success(request,"Event Updated Successfully")
-            return redirect("events:editEvent", eventID)
         else:
-            messages.error(request,"Something Went Wrong!!!")
+           #todaysevents:
+           contextData = events.filter(eventDate = today)
+
+        role = get_user_role(self.request.user)
+
+        context.update(
+            {
+            "total_events_count":total_events_count,
+            "total_participants_count":total_participants_count,
+            "previous_events_count":previous_events_count,
+            "upcoming_events_count":upcoming_events_count,
+            "contextData":contextData,
+            "type": type,
+            "role":role,
+          }) 
+
+        return context
     
-    context = {
-        "form":event_form
-    }
-
-   
-    return render(request,"operations/create_ev_cat.html",context)
 
 
 
-@permission_required("events.delete_event",login_url="events:no_permission")
-def deleteEvent(request,eventID):
+class Details(DetailView):
+    model = Event
+    context_object_name = "event"
+    template_name = "operations/details.html"
+    pk_url_kwarg = "eventID"
 
-    if request.method == "POST":
-        event = Event.objects.get(id = eventID)
-        event.delete()
-        messages.success(request,"Event Deleted Successfully")
-        return redirect("events:dashboard")
+    def get_queryset(self):
+        qs = (Event.objects.select_related("catagory").prefetch_related(
+              Prefetch("participants",queryset=Participant.objects.select_related("user")))
+              )
+        return qs
     
-    else:
-        messages.error(request,"Something Went Wrong")
-        return redirect("events:dashboard")
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        role = get_user_role(self.request.user)
+        can_view = (role == "Admin" or role == "Organizer")
+        context["can_view"] = can_view
+        return context
+    
+    
+    
 
 
 
 
-  
-
-@permission_required("events.add_event",login_url="events:no_permission")
-def create_event(request):
-
-    if request.method == "POST":
-        event_form = EventModelForm(request.POST,request.FILES)
-        if event_form.is_valid():
-            event = event_form.save()
-            messages.success(request,"Event Created Successfully")
-            return redirect("events:create_event")
-        else:
-             messages.error(request, event_form.errors)
-             return redirect("events:create_event")
-           
-
-
-    if Catagory.objects.count() == 0:
-        messages.warning(request,"Pleaes Create a Catagory First")
-        return redirect("events:create_catagory")
-
-
-    event_form = EventModelForm()
-
-    context = {
-        "form":event_form
-    }
-
-   
-    return render(request,"operations/create_ev_cat.html",context)
+class CreateEvent(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
+    model = Event
+    form_class = EventModelForm
+    template_name = "operations/create_ev_cat.html"
+    login_url = "users:log_in"
+    redirect_field_name = "next"
+    permission_required = "events.add_event"
+    raise_exception = False
 
 
 
-
-
-
-   
-
-
-@permission_required("events.add_catagory",login_url="events:no_permission")
-def create_catagory(request):
-
-   if request.method == "POST":
-        catagory_form = CatagoryModelForm(request.POST)
-
-        if catagory_form.is_valid():
-            catagory = catagory_form.save()
-            messages.success(request,"Catagory Created Successfully")
+    def dispatch(self, request, *args, **kwargs):
+        if Catagory.objects.count() == 0:
+            messages.warning(request,"Please Create a Category First")
             return redirect("events:create_catagory")
-   
-   catagory_form = CatagoryModelForm()
-   context = {
-       "form":catagory_form
-   }
 
-   
-
-   
-   return render(request,"operations/create_ev_cat.html",context)
-
-
-
-
-
-@permission_required("events.change_catagory",login_url="events:no_permission")
-def editCatagory(request,catagoryID):
-    catagory = Catagory.objects.get(id = catagoryID)
-    catagory_form = CatagoryModelForm(instance = catagory)
-
-    if request.method == "POST":
-        catagory_form = CatagoryModelForm(request.POST,instance = catagory)
-        if catagory_form.is_valid():
-            catagory = catagory_form.save()
-            messages.success(request,"Catagory Updated Successfully")
-            return redirect("events:editCatagory", catagoryID)
-        else:
-            messages.error(request,"Something Went Wrong!!!")
-    
-    context = {
-        "form":catagory_form
-    }
-
-   
-    return render(request,"operations/create_ev_cat.html",context)
-
-
-
-
-@permission_required("events.delete_catagory",login_url="events:no_permission")
-def deleteCatagory(request,catagoryID):
-    if request.method == "POST":
-        catagory = Catagory.objects.get(id = catagoryID)
-        catagory.delete()
-        messages.success(request,"Catagory Deleted Successfully")
-        return redirect("home")
-    
-    else:
-        messages.error(request,"Something Went Wrong")
-        return redirect("home")
+        return super().dispatch(request, *args, **kwargs)
     
 
 
+    def handle_no_permission(self):
+
+        if not self.request.user.is_authenticated:
+            messages.warning(self.request,"Please login first")
+            return redirect_to_login(self.request.get_full_path(),self.login_url,self.redirect_field_name)
+        
+        return redirect("events:no_permission")
 
 
-def rsvp(request,eventID):
-    user =request.user
-
-    if not user.is_authenticated:
-        messages.warning(request,"please Login first")
-        return redirect("users:log_in")
-
-    if not user.is_superuser:
-        participant = getattr(user,'participant',None)
-        event = Event.objects.get(id = eventID)
-
-        if event.participants.filter(id = participant.id).exists():
-            messages.error(request,f"{user.username} has already rsvp this event")
-        else:
-
-            event.participants.add(participant)
-            messages.success(request,f"{event.eventName} added to -> {user.username} -> this account successfully")
+    def get_success_url(self):
+        return reverse_lazy("events:create_event")
     
-    else:
-        messages.error(request,"Super user cannot rsvp events")
+
+    def form_valid(self, form):
+        messages.success(self.request,"Event Created Successfully")
+        return super().form_valid(form)
+    
+
+    def form_invalid(self, form):
+        messages.error(self.request,"Something Went Wrong!!!")
+        return super().form_invalid(form)
+
+
+
+
+class EditEvent(LoginRequiredMixin,PermissionRequiredMixin,UpdateView):
+    model = Event
+    form_class = EventModelForm
+    template_name = "operations/create_ev_cat.html"
+    pk_url_kwarg = "eventID"
+    login_url = "users:log_in"
+    redirect_field_name = "next"
+    permission_required = "events.change_event"
+    raise_exception = False
+
+
+
+
+    def handle_no_permission(self):
+
+        if not self.request.user.is_authenticated:
+            messages.warning(self.request,"Please login first")
+            return redirect_to_login(self.request.get_full_path(),self.login_url,self.redirect_field_name)
+        
+        return redirect("events:no_permission")
+
+    
+    def get_success_url(self):
+        return reverse_lazy("events:editEvent",kwargs = {"eventID":self.object.id})
+    
+    def form_valid(self, form):
+        messages.success(self.request,"Event Updated Successfully")
+        return super().form_valid(form)
+    
+
+    def form_invalid(self, form):
+        messages.error(self.request,"Something Went Wrong!!!")
+        return super().form_invalid(form)
         
     
 
 
-    return redirect("events:dashboard")
+class DeleteEvent(LoginRequiredMixin,PermissionRequiredMixin,SuccessMessageMixin,DeleteView):
+    model = Event
+    pk_url_kwarg = "eventID"
+    login_url = "users:log_in"
+    redirect_field_name = "next"
+    permission_required = "events.delete_event"
+    raise_exception = False
+
+    success_url = reverse_lazy("events:dashboard")
+
+
+    def handle_no_permission(self):
+
+        if not self.request.user.is_authenticated:
+            messages.warning(self.request,"Please login first")
+            return redirect_to_login(self.request.get_full_path(),self.login_url,self.redirect_field_name)
+        
+        return redirect("events:no_permission")
+    
+
+    def get_success_message(self, cleaned_data):
+        return f"{self.object} was deleted successfully."
+    
+    
+
+    
+    def get(self, request, *args, **kwargs):
+        messages.error(request,"Invalid get request")
+        return redirect(self.success_url)
+    
+
+
+    
+
+
+class CreateCatagory(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
+    model = Catagory
+    form_class = CatagoryModelForm
+    template_name = "operations/create_ev_cat.html"
+    login_url = "users:log_in"
+    redirect_field_name = "next"
+    permission_required = "events.add_catagory"
+    raise_exception = False
+
+
+    def handle_no_permission(self):
+
+        if not self.request.user.is_authenticated:
+            messages.warning(self.request,"Please login first")
+            return redirect_to_login(self.request.get_full_path(),self.login_url,self.redirect_field_name) 
+        
+        return  redirect("events:no_permission")
+    
+
+    def get_success_url(self):
+        return reverse_lazy("events:create_catagory")
+    
+
+    def form_valid(self, form):
+        messages.success(self.request,"Catagory Created Successfully")
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request,"Something went wrong")
+        return super().form_invalid(form)
+        
+    
+    
+
+
+class EditCatagory(LoginRequiredMixin,PermissionRequiredMixin,UpdateView):
+    model = Catagory
+    form_class = CatagoryModelForm
+    template_name = "operations/create_ev_cat.html"
+    login_url = "users:log_in"
+    redirect_field_name = "next"
+    pk_url_kwarg = "catagoryID"
+    permission_required = "events.change_catagory"
+    raise_exception = False
+
+    
+
+    def handle_no_permission(self):
+
+        if not self.request.user.is_authenticated:
+            messages.warning(self.request,"Please login first")
+            return redirect_to_login(self.request.get_full_path(),self.login_url,self.redirect_field_name)
+        
+        return redirect("events:no_permission")
+
+
+    def get_success_url(self):
+        return reverse_lazy("events:editCatagory",kwargs = {"catagoryID":self.object.id})
+
+
+    def form_valid(self, form):
+        messages.success(self.request,"Catagory Updated Successfully")
+        return super().form_valid(form)
+    
+
+    def form_invalid(self, form):
+        messages.error(self.request,"Something Went Wrong!!!")
+        return super().form_invalid(form)
+    
+    
+
+
+class DeleteCatagory(LoginRequiredMixin,PermissionRequiredMixin,SuccessMessageMixin,DeleteView):
+    model = Catagory
+    pk_url_kwarg = "catagoryID"
+    login_url = "users:log_in"
+    success_url = reverse_lazy("home")
+    permission_required = "events.delete_catagory"
+    raise_exception = False
+    redirect_field_name = "next"
+
+
+    def handle_no_permission(self):
+
+        if not self.request.user.is_authenticated:
+            messages.warning(self.request,"Please login first")
+            return redirect_to_login(self.request.get_full_path(),self.login_url,self.redirect_field_name)
+        
+        return redirect("events:no_permission")
+    
+
+    def get_success_message(self, cleaned_data):
+        return f"Catagory {self.object} was deleted successfully."
+    
+    
+
+    
+    def get(self, request, *args, **kwargs):
+        messages.error(request,"Invalid get request")
+        return redirect(self.success_url)
+
+
+    
+
+
+
+class RSVP(View):
+
+    def get(self,request,eventID,*args,**kwargs):
+        user = request.user
+
+        if not user.is_authenticated:
+            messages.warning(request,"please Login first")
+            return redirect("users:log_in")
+
+        if not user.is_superuser:
+            participant = getattr(user,'participant',None)
+            event = Event.objects.get(id = eventID)
+
+            if event.participants.filter(id = participant.id).exists():
+                messages.error(request,f"{user.username} has already rsvp this event")
+            
+            else:
+                event.participants.add(participant)
+                messages.success(request,f"{event.eventName} added to -> {user.username} -> this account successfully")
+    
+        else:
+            messages.error(request,"Super user cannot rsvp events")
+            
+        
+        return redirect("events:dashboard")
+        
+
 
 
 
 def no_permission(request):
     if request.user.is_authenticated:
-        return render(request,"no_permission.html")
+        return render(request,"operations/no_permission.html")
     else:
         messages.warning(request,"please Login first")
         return redirect("users:log_in")

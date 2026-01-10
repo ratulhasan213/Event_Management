@@ -38,9 +38,9 @@ DEBUG = True
 
 
 """ For local (uncomment this) start: """  
-
-# ALLOWED_HOSTS = []
-
+"""  
+ALLOWED_HOSTS = []
+"""
 
 """For local (uncomment this) end"""
 
@@ -51,14 +51,30 @@ DEBUG = True
 
 
 """ for render start: uncomment this """
-
+"""  
 
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com", "http://127.0.0.1:8000"]
 
-
+"""
 
 """ for render end: uncomment this """
+
+
+#chat gpt given:(render)
+
+ALLOWED_HOSTS = [
+    "event-management-j60o.onrender.com",
+    "127.0.0.1",
+    "localhost",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://event-management-j60o.onrender.com",
+    "http://127.0.0.1:8000",
+]
+
+#chat gpt given:(render)
 
 
 
@@ -133,8 +149,7 @@ WSGI_APPLICATION = 'event_management.wsgi.application'
 
 #postgress(Local): (uncomment this):
 
-""" 
-
+"""  
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -147,6 +162,8 @@ DATABASES = {
 }
 
 """
+
+
 #postgress(Local): (uncomment this):
 
 
@@ -157,6 +174,8 @@ DATABASES = {
 """ render database start  uncomment """
 
 
+
+
 DATABASES = {
     'default': dj_database_url.config(
         # Replace this value with your local database's connection string.
@@ -164,6 +183,8 @@ DATABASES = {
         conn_max_age=600
     )
 }
+
+
 
 """ render database end uncomment """
 
@@ -245,5 +266,10 @@ FRONT_END_URL = config(
     default="http://127.0.0.1:8000"
 )
 
-LOGIN_URL = 'log_in'
+
+
+LOGIN_URL = '/users/log_in/'
+
+LOGIN_REDIRECT_URL = "/users/profile/"
+LOGOUT_REDIRECT_URL = "/users/log_in/"
 

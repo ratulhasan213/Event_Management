@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.urls import reverse
+from users.models import Participant
 
 
 
@@ -27,3 +28,10 @@ def send_activation_email(sender,instance,created,**kwargs):
             )
         except Exception as e:
             print(f"failed to send email: {instance.email}. Error: {str(e)}")
+
+
+
+@receiver(post_save,sender=User)
+def create_participant(sender,instance,created,**kwargs):
+    if created:
+        Participant.objects.create(user = instance)

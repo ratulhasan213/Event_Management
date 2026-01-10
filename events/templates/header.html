@@ -16,8 +16,11 @@
                 <li><a href="">Contact</a></li>
                 <li><a href="">About</a></li>
                 {% if user.is_authenticated %}
-                    <li>
-                        <a href="{% url 'users:log_out' %}">Logout/</a>
+                    <li class = "flex items-center">
+                        <form method="post" action="{% url 'users:log_out' %}">
+                            {% csrf_token %}
+                            <button type="submit">Logout/</button>
+                        </form>
                         <a href="{% url 'users:my_profile' %}">Profile</a>
                     </li>
 
